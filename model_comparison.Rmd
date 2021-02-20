@@ -1,0 +1,253 @@
+---
+title: "Model Comparison"
+output: html_notebook
+---
+
+
+Logistic Regression with Elastic Net Regularization
+```{r}
+#model #model
+#res #train
+roc_lr <- roc((loan_outcome) ~ as.numeric(lr_res), data = test1)
+plot(roc_lr, col = 'purple')
+roc_lr
+
+
+```
+
+
+Linear Discriminant Analysis
+```{r}
+#lda #model
+roc_lda <- roc(as.factor(loan_outcome) ~ as.numeric(lda_res), data = test1)
+plot(roc_lda, col = "purple")
+roc_lda
+```
+
+
+Cost-sensitive Gradient Boosting Machine
+interaction debth = 7 
+shrinkage = 0.01
+weights = (1,10)
+```{r}
+#gbm.tuned #model
+#gbm_res <- gbm_test_tuned #test
+roc_gbm <- roc(as.factor(loan_outcome) ~ gbm_res, data = test1)
+plot(roc_gbm, col = "purple")
+roc_gbm
+```
+
+
+Random Forest, 375 Trees
+```{r}
+#rf_tune #model
+#rf_res #test
+roc_rf <- roc(as.factor(loan_outcome) ~ as.numeric(rf_res), data = test1)
+plot(roc_rf)
+roc_rf
+```
+
+Ensemble Classifier
+```{r}
+#predict_loan_status_ensemble #test
+roc_ensemble <- roc(as.factor(loan_outcome) ~ as.numeric(ensemble_res), data = test1)
+plot(roc_ensemble)
+roc_ensemble
+```
+
+Compare ROCs
+```{r}
+plot(roc_lr,legacy.axes = TRUE,col="yellow",main="ROC compare")
+plot(roc_lda,legacy.axes = TRUE,col="purple",add=TRUE)
+plot(roc_rf,legacy.axes = TRUE,col="green",add=TRUE)
+plot(roc_gbm,legacy.axes = TRUE,col="pink",add=TRUE)
+plot(roc_ensemble,legacy.axes = TRUE,col="blue",add=TRUE)
+
+
+
+legend("bottomright",legend=c("LR","LDA","RF","GBM","ensemble"),fill=c("yellow","purple","green","pink","blue"))
+
+```
+
+
+
+
+LC grade percentage 
+```{r}
+LC <- compare%>%group_by(grade)%>%summarize(percent = n()/6387, precision =1- mean(loan_outcome), return = (((sum(total_pymnt)+sum(recoveries))/sum(loan_amnt))-1)*100, interest = mean(int_rate), lgd = mean(lgd), poverty = mean(poverty_rate), growth = mean(growth), hs = mean(hs), bach = mean(bach), inc = median(annual_inc))
+compare%>%filter(loan_outcome==1&grade=="A")%>%summarize(grade = "A", lgd = 1-mean(actual_return))
+compare%>%filter(loan_outcome==1&grade=="B")%>%summarize(grade = "B", lgd = 1-mean(actual_return))
+compare%>%filter(loan_outcome==1&grade=="C")%>%summarize(grade = "C", lgd = 1-mean(actual_return))
+compare%>%filter(loan_outcome==1&grade=="D")%>%summarize(grade = "D", lgd = 1-mean(actual_return))
+compare%>%filter(loan_outcome==1&grade=="E")%>%summarize(grade = "E", lgd = 1-mean(actual_return))
+compare%>%filter(loan_outcome==1&grade=="F")%>%summarize(grade = "F", lgd = 1-mean(actual_return))
+compare%>%filter(loan_outcome==1&grade=="G")%>%summarize(grade = "GR", lgd = 1-mean(actual_return))
+
+LC
+compare%>%summarize(int = median(int_rate))
+```
+
+Create ensemble table
+```{r}
+ce <- cbind(compare,ensemble_res)
+e_a<- ce%>%filter(ensemble_res< .13)%>%summarize(grade = "A", percent = n()/6387, precision = 1-mean(loan_outcome), return = (((sum(total_pymnt)+sum(recoveries))/sum(loan_amnt))-1)*100, interest = mean(int_rate), lgd = mean(lgd), poverty = mean(poverty_rate), growth = mean(growth), hs = mean(hs), bach = mean(bach), inc = median(annual_inc))
+ce%>%filter(loan_outcome==1&ensemble_res<.214)%>%summarize(lgd = 1-mean(actual_return))
+
+e_b<- ce%>%filter( ensemble_res >= .13 & ensemble_res < .21)%>%summarize(grade = "B", percent = n()/6387, precision = 1-mean(loan_outcome), return = (((sum(total_pymnt)+sum(recoveries))/sum(loan_amnt))-1)*100, interest = mean(int_rate), lgd = mean(lgd), poverty = mean(poverty_rate), growth = mean(growth), hs = mean(hs), bach = mean(bach), inc = median(annual_inc))
+ce%>%filter(loan_outcome==1&ensemble_res >= .13 & ensemble_res < .21)%>%summarize(lgd = 1-mean(actual_return))
+
+e_c<- ce%>%filter( ensemble_res >= .21 & ensemble_res < .27)%>%summarize(grade = "C", percent = n()/6387, precision = 1-mean(loan_outcome), return = (((sum(total_pymnt)+sum(recoveries))/sum(loan_amnt))-1)*100, interest = mean(int_rate), lgd = mean(lgd), poverty = mean(poverty_rate), growth = mean(growth), hs = mean(hs), bach = mean(bach), inc = median(annual_inc))
+ce%>%filter(loan_outcome==1& ensemble_res >= .21 & ensemble_res < .27)%>%summarize(lgd = 1-mean(actual_return))
+
+e_d<- ce%>%filter( ensemble_res >= .27 & ensemble_res < .34)%>%summarize(grade = "D", percent = n()/6387, precision = 1-mean(loan_outcome), return = (((sum(total_pymnt)+sum(recoveries))/sum(loan_amnt))-1)*100, interest = mean(int_rate), lgd = mean(lgd), poverty = mean(poverty_rate), growth = mean(growth), hs = mean(hs), bach = mean(bach), inc = median(annual_inc))
+ce%>%filter(loan_outcome==1&  ensemble_res >= .27 & ensemble_res < .34)%>%summarize(lgd = 1-mean(actual_return))
+
+e_e<- ce%>%filter( ensemble_res >= .34 & ensemble_res < .41)%>%summarize(grade = "E", percent = n()/6387, precision = 1-mean(loan_outcome), return = (((sum(total_pymnt)+sum(recoveries))/sum(loan_amnt))-1)*100, interest = mean(int_rate), lgd = mean(lgd), poverty = mean(poverty_rate), growth = mean(growth), hs = mean(hs), bach = mean(bach), inc = median(annual_inc))
+ce%>%filter(loan_outcome==1&  ensemble_res >= .34 & ensemble_res < .41)%>%summarize(lgd = 1-mean(actual_return))
+
+e_f<- ce%>%filter( ensemble_res >= .41 & ensemble_res < .43)%>%summarize(grade = "F", percent = n()/6387, precision= 1-mean(loan_outcome), return = (((sum(total_pymnt)+sum(recoveries))/sum(loan_amnt))-1)*100, interest = mean(int_rate), lgd = mean(lgd),poverty = mean(poverty_rate), growth = mean(growth), hs = mean(hs), bach = mean(bach), inc = median(annual_inc))
+ce%>%filter(loan_outcome==1&  ensemble_res >= .41 & ensemble_res < .43)%>%summarize(lgd = 1-mean(actual_return))
+e_g<- ce%>%filter( ensemble_res >= .43)%>%summarize(grade = "G", percent = n()/6387, precision = 1-mean(loan_outcome), return = (((sum(total_pymnt)+sum(recoveries))/sum(loan_amnt))-1)*100, interest = mean(int_rate), lgd = mean(lgd),poverty = mean(poverty_rate), growth = mean(growth), hs = mean(hs), bach = mean(bach), inc = median(annual_inc))
+
+ce%>%filter(loan_outcome==1&  ensemble_res >= .43)%>%summarize(lgd = 1-mean(actual_return))
+E <- rbind(e_a, e_b, e_c, e_d, e_e, e_f, e_g)
+E
+```
+
+
+Create RF table 
+```{r}
+cr <- cbind(compare, rf_res)
+rf_a<- cr%>%filter( rf_res < .125)%>%summarize(grade = "A", percent = n()/6387, precision = 1-mean(loan_outcome), return = (((sum(total_pymnt)+sum(recoveries))/sum(loan_amnt))-1)*100, interest = mean(int_rate), lgd = mean(lgd))
+rf_a
+rf_b<- cr%>%filter( rf_res >= .125 & rf_res < .24)%>%summarize(grade = "B", percent = n()/6387, precision = 1-mean(loan_outcome), return = (((sum(total_pymnt)+sum(recoveries))/sum(loan_amnt))-1)*100, interest = mean(int_rate), lgd = mean(lgd))
+rf_b
+rf_c<- cr%>%filter( rf_res >= .24 & rf_res < .35)%>%summarize(grade = "C", percent = n()/6387, precision = 1-mean(loan_outcome), return = (((sum(total_pymnt)+sum(recoveries))/sum(loan_amnt))-1)*100, interest = mean(int_rate), lgd = mean(lgd))
+rf_c
+rf_d<- cr%>%filter( rf_res >= .35 & rf_res < .38)%>%summarize(grade = "D", percent = n()/6387, precision = 1-mean(loan_outcome), return = (((sum(total_pymnt)+sum(recoveries))/sum(loan_amnt))-1)*100, interest = mean(int_rate), lgd = mean(lgd))
+rf_d
+rf_e<- cr%>%filter( rf_res >= .38& rf_res < .46)%>%summarize(grade = "E", percent = n()/6387, precision = 1-mean(loan_outcome), return = (((sum(total_pymnt)+sum(recoveries))/sum(loan_amnt))-1)*100, interest = mean(int_rate), lgd = mean(lgd))
+rf_e
+rf_f<- cr%>%filter( rf_res >= .46& rf_res < .50)%>%summarize(grade = "F", percent = n()/6387, precision = 1-mean(loan_outcome), return = (((sum(total_pymnt)+sum(recoveries))/sum(loan_amnt))-1)*100, interest = mean(int_rate), lgd = mean(lgd))
+rf_f
+rf_g<- cr%>%filter( rf_res >= .50)%>%summarize(grade = "G", percent = n()/6387, precision = 1-mean(loan_outcome), return = (((sum(total_pymnt)+sum(recoveries))/sum(loan_amnt))-1)*100, interest = mean(int_rate), lgd = mean(lgd))
+rf_g
+RF <- rbind(rf_a, rf_b, rf_c, rf_d, rf_e, rf_f, rf_g)
+RF
+```
+
+
+Create LDA table
+```{r}
+cl <- cbind(compare, lda_res)
+lda_a<- cl%>%filter(lda_res<.089)%>%summarize(grade = "A", percent = n()/6387, precision = 1-mean(loan_outcome), return = (((sum(total_pymnt)+sum(recoveries))/sum(loan_amnt))-1)*100, interest = mean(int_rate), lgd = mean(lgd))
+lda_a
+lda_b<- cl%>%filter(lda_res>=.089 & lda_res < .19)%>%summarize(grade = "B", percent = n()/6387, precision = 1-mean(loan_outcome), return = (((sum(total_pymnt)+sum(recoveries))/sum(loan_amnt))-1)*100,interest = mean(int_rate), lgd = mean(lgd))
+lda_b
+lda_c<- cl%>%filter(lda_res>=.19 & lda_res < .28)%>%summarize(grade = "C", percent = n()/6387, precision = 1-mean(loan_outcome), return = (((sum(total_pymnt)+sum(recoveries))/sum(loan_amnt))-1)*100, interest = mean(int_rate), lgd = mean(lgd))
+lda_c
+lda_d<- cl%>%filter(lda_res>=.28 & lda_res < .34)%>%summarize(grade = "D", percent = n()/6387, precision = 1-mean(loan_outcome), return = (((sum(total_pymnt)+sum(recoveries))/sum(loan_amnt))-1)*100, interest = mean(int_rate), lgd = mean(lgd))
+lda_d
+lda_e<- cl%>%filter(lda_res>=.34& lda_res < .50)%>%summarize(grade = "E", percent = n()/6387, precision = 1-mean(loan_outcome), return = (((sum(total_pymnt)+sum(recoveries))/sum(loan_amnt))-1)*100, interest = mean(int_rate), lgd = mean(lgd))
+lda_e
+lda_f<- cl%>%filter(lda_res>=.50 & lda_res < .63)%>%summarize(grade = "F", percent = n()/6387, precision = 1-mean(loan_outcome), return = (((sum(total_pymnt)+sum(recoveries))/sum(loan_amnt))-1)*100, interest = mean(int_rate), lgd = mean(lgd))
+lda_f
+lda_g<- cl%>%filter(lda_res>=.63)%>%summarize(grade = "G", percent = n()/6387, precision = 1-mean(loan_outcome), return = (((sum(total_pymnt)+sum(recoveries))/sum(loan_amnt))-1)*100, interest = mean(int_rate), lgd = mean(lgd))
+lda_g
+LDA <- rbind(lda_a, lda_b, lda_c, lda_d, lda_e, lda_f, lda_g)
+LDA
+```
+
+
+
+
+Create GBM table 
+```{r}
+cg <- cbind(compare, gbm_res)
+gbm_a<- cg%>%filter(gbm_res<.112)%>%summarize(grade = "A", percent = n()/6387, precision = 1-mean(loan_outcome), return = (((sum(total_pymnt)+sum(recoveries))/sum(loan_amnt))-1)*100, interest = mean(int_rate), lgd = mean(lgd))
+gbm_a
+gbm_b<- cg%>%filter(gbm_res>=.112& gbm_res < .19)%>%summarize(grade = "B", percent = n()/6387, precision = 1-mean(loan_outcome), return = (((sum(total_pymnt)+sum(recoveries))/sum(loan_amnt))-1)*100, interest = mean(int_rate), lgd = mean(lgd))
+gbm_b
+gbm_c<- cg%>%filter(gbm_res>=.19& gbm_res < .24)%>%summarize(grade = "C", percent = n()/6387, precision = 1-mean(loan_outcome), return = (((sum(total_pymnt)+sum(recoveries))/sum(loan_amnt))-1)*100, interest = mean(int_rate), lgd = mean(lgd))
+gbm_c
+gbm_d<- cg%>%filter(gbm_res>=.24 & gbm_res < .37)%>%summarize(grade = "D", percent = n()/6387, precision = 1-mean(loan_outcome), return = (((sum(total_pymnt)+sum(recoveries))/sum(loan_amnt))-1)*100, interest = mean(int_rate), lgd = mean(lgd))
+gbm_d
+gbm_e<- cg%>%filter(gbm_res>=.37 & gbm_res < .45)%>%summarize(grade = "E", percent = n()/6387, precision = 1-mean(loan_outcome), return = (((sum(total_pymnt)+sum(recoveries))/sum(loan_amnt))-1)*100, interest = mean(int_rate), lgd = mean(lgd))
+gbm_e
+gbm_f<- cg%>%filter(gbm_res>=.45 & gbm_res < .50)%>%summarize(grade = "F", percent = n()/6387, precision = 1-mean(loan_outcome), return = (((sum(total_pymnt)+sum(recoveries))/sum(loan_amnt))-1)*100, interest = mean(int_rate), lgd = mean(lgd))
+gbm_f
+gbm_g<- cg%>%filter(gbm_res>=.50)%>%summarize(grade = "G", percent = n()/6387, precision = 1-mean(loan_outcome), return = (((sum(total_pymnt)+sum(recoveries))/sum(loan_amnt))-1)*100,interest = mean(int_rate), lgd = mean(lgd))
+gbm_g
+GBM <- rbind(gbm_a, gbm_b, gbm_c, gbm_d, gbm_e, gbm_f, gbm_g)
+GBM
+```
+
+
+Create LR table
+```{r} 
+cl <- cbind(compare, lr_res)
+lr_a <- cl%>%filter(lr_res<.128)%>%summarize(grade = "A", percent = n()/6387, precision = 1-mean(loan_outcome), return = (((sum(total_pymnt)+sum(recoveries))/sum(loan_amnt))-1)*100, interest = mean(int_rate), lgd = mean(lgd))
+lr_a
+lr_b <- cl%>%filter(lr_res>=.128& lr_res <.21)%>%summarize(grade = "B", percent = n()/6387, precision = 1-mean(loan_outcome), return= (((sum(total_pymnt)+sum(recoveries))/sum(loan_amnt))-1)*100, interest = mean(int_rate), lgd = mean(lgd))
+lr_b
+lr_c <- cl%>%filter(lr_res>=.21& lr_res <.26)%>%summarize(grade = "C", percent = n()/6387, precision = 1-mean(loan_outcome), return = (((sum(total_pymnt)+sum(recoveries))/sum(loan_amnt))-1)*100, interest = mean(int_rate), lgd = mean(lgd))
+lr_c
+lr_d <- cl%>%filter(lr_res>=.26& lr_res <.28)%>%summarize(grade = "D", percent = n()/6387, precision = 1-mean(loan_outcome), return = (((sum(total_pymnt)+sum(recoveries))/sum(loan_amnt))-1)*100, interest = mean(int_rate), lgd = mean(lgd))
+lr_d
+lr_e <- cl%>%filter(lr_res>=.29& lr_res <.39)%>%summarize(grade = "E", percent = n()/6387, precision = 1-mean(loan_outcome), return = (((sum(total_pymnt)+sum(recoveries))/sum(loan_amnt))-1)*100, interest = mean(int_rate), lgd = mean(lgd))
+lr_e
+lr_f <- cl%>%filter(lr_res>=.39& lr_res <.45)%>%summarize(grade = "F", percent = n()/6387, precision = 1-mean(loan_outcome), return = (((sum(total_pymnt)+sum(recoveries))/sum(loan_amnt))-1)*100, interest = mean(int_rate), lgd = mean(lgd))
+lr_f
+lr_g <- cl%>%filter(lr_res>=.45)%>%summarize(grade = "G", percent = n()/6387, precision = 1-mean(loan_outcome), return = (((sum(total_pymnt)+sum(recoveries))/sum(loan_amnt))-1)*100, interest = mean(int_rate), lgd = mean(lgd))
+lr_g
+LR <- rbind(lr_a, lr_b, lr_c, lr_d, lr_e, lr_f, lr_g)
+LR
+```
+
+
+Merge Tables 
+```{r}
+LR$model = "lr"
+GBM$model = "gbm"
+LDA$model = "lda"
+RF$model = "rf"
+E$model = "ensemble"
+
+LC$model = "lc"
+all_models = rbind(LR, GBM, LDA, RF, E, LC)
+```
+
+Interest
+```{r}
+ggplot(all_models,aes(x=grade,y=interest,group=model)) + 
+    geom_line(aes(color = model)) + 
+    geom_point() +
+    xlab("Grade") +
+    ylab("Interest (%)") +
+    labs(title = "Interest for each Grade Classification")
+```
+
+Return
+```{r}
+ggplot(all_models,aes(x=grade,y=percent,group=model)) + 
+    geom_line(aes(color = model)) + 
+    geom_point() +
+    xlab("Grade") +
+    ylab("Percent Suggested (%)") +
+    labs(title = "Percent Suggested for each Grade Classification")
+```
+
+
+Percent Suggested
+```{r}
+ggplot(all_models,aes(x=grade,y=return,group=model)) + 
+    geom_line(aes(color = model)) + 
+    geom_point() +
+    xlab("Grade") +
+    ylab("Percent Suggested (%)") +
+    labs(title = "Percent Suggested for each Grade Classification")
+```
+
+
+
+
