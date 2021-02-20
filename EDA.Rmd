@@ -1,0 +1,394 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library(ggplot2)
+library(tidyverse)
+library(stringr)
+library(lubridate)
+```
+
+
+```{r}
+loan2 <- read.csv(file.choose(), header = T)
+```
+
+
+As the grade decreses, the interest rate increases 
+```{r}
+ggplot(loan2) + 
+  geom_boxplot(aes(x = grade , y = int_rate , fill = grade)) + 
+  labs(y = 'Interest Rate' , x = 'Grade')
+```
+
+
+Graph displays proportion of defaults and fully paid loans per grade
+```{r}
+ggplot(loan2) + 
+  geom_bar(aes(x = grade , y = ..count.. , fill = factor(loan_outcome , c(1 , 0) , c('Default' , 'Fully Paid'))), position = "fill")
+```
+
+```{r}
+colnames(loan2)
+```
+
+Create dataset with important variables
+```{r}
+loan2 <- loan2%>%
+  select(loan_outcome , loan_amnt , int_rate , grade , emp_length , home_ownership , 
+               annual_inc , term, issue_d)
+```
+```{r}
+loan7 <- loan2%>%
+  select(loan_outcome , loan_amnt , int_rate , grade , emp_length , home_ownership , 
+               annual_inc , term, issue_d, last_pymnt_d)
+```
+
+Lets see default rate by income...
+
+Startify income by creating a new variable
+```{r}
+#use quartiles to find the breaks
+summary(loan2$annual_inc)
+loan2 <- loan2%>%
+  mutate(income_category = with(loan2, cut(annual_inc, breaks = c(0, 45000, 65000, 90000, 10999200), labels = c('45000 or less', '45001-65000',
+  '65001-90000', '90000+'))))
+```
+Default rate increases slightly as income decreses
+```{r}
+ggplot(loan2) + 
+  geom_bar(aes(x = income_category , y = ..count.. , fill = factor(loan_outcome , c(1 , 0) , c('Default' , 'Fully Paid'))), position = "fill")+
+  coord_flip()
+```
+
+length of employment does not seem to affect default rate
+```{r}
+loan2$emp_length <- as.factor(loan2$emp_length)
+ggplot(loan2) + 
+  geom_bar(aes(x = emp_length , y = ..count.. , fill = factor(loan_outcome , c(1 , 0) , c('Default' , 'Fully Paid'))), position = "fill")+
+  coord_flip()
+```
+Appears that home_ownership does not have too large an effect on default rate
+```{r}
+loan2$home_ownership <- as.factor(loan2$home_ownership)
+ggplot(loan2) + 
+  geom_bar(aes(x = home_ownership , y = ..count.. , fill = factor(loan_outcome , c(1 , 0) , c('Default' , 'Fully Paid'))), position = "fill")+
+  coord_flip()
+```
+
+```{r}
+#install.packages("plyr")
+library(plyr)
+```
+
+20.07% have defaulted
+```{r}
+count(loan2, 'loan_outcome')
+261686/ (1041952+261686)
+```
+
+
+Unlike the bar graph above, these fractions show us that there actually does seem to be a relationship between income and default rate 
+```{r}
+loan2%>%
+  group_by(loan_outcome, income_category)%>%
+  dplyr::summarise(count=n())
+#45000 or less
+75634/(246981+75634)	
+#45001-65000
+75353/(279181+75353)	
+#65001-90000
+58124/ (244947 + 58124)
+#90000+
+52515	/ (270601	+ 52515)
+```
+
+
+
+```{r}
+loan2
+```
+
+
+60 months twice as likely to defualt than 36 months 
+```{r}
+loan%>%
+  group_by(term, loan_outcome)%>%
+  dplyr::summarize(count = n())
+#36 months 
+159169/ (829605+159169)
+#60 months
+102517 / (212347+102517)
+```
+
+Default rate per emp_length level, emp_length does not seem to have that big an impact...hb during a recession?
+```{r}
+loan2
+loan2%>%
+  group_by(emp_length, loan_outcome)%>%
+  dplyr::summarize(count = n())
+
+#<1
+21622 / (82930+21622) = .2
+#1
+17692/(67986+17692)
+#2
+23482/(94343+23482)
+#3
+20937/ (20937+83267)
+#10+
+80933/ (80933+347620)
+```
+
+
+```{r}
+loan3 <- loan2%>%
+  mutate(issue_dc= issue_d)
+loan3$issue_d <- paste(loan3$issue_d, "-01", sep = "")
+loan3
+```
+
+```{r}
+
+loan7$issue_d <- paste(loan7$issue_d, "-01", sep = "")
+loan7
+```
+```{r}
+loan7$last_pymnt_d <- paste(loan7$last_pymnt_d, "-01", sep = "")
+loan7
+```
+
+
+```{r}
+loan3$issue_d <- str_replace(loan3$issue_d, "Dec", "12")
+loan3$issue_d <- str_replace(loan3$issue_d, "Jan", "01")
+loan3$issue_d <- str_replace(loan3$issue_d, "Feb", "02")
+loan3$issue_d <- str_replace(loan3$issue_d, "Mar", "03")
+loan3$issue_d <- str_replace(loan3$issue_d, "Apr", "04")
+loan3$issue_d <- str_replace(loan3$issue_d, "May", "05")
+loan3$issue_d <- str_replace(loan3$issue_d, "Jun", "06")
+loan3$issue_d <- str_replace(loan3$issue_d, "Jul", "07")
+loan3$issue_d <- str_replace(loan3$issue_d, "Aug", "08")
+loan3$issue_d <- str_replace(loan3$issue_d, "Sep", "09")
+loan3$issue_d <- str_replace(loan3$issue_d, "Oct", "10")
+loan3$issue_d <- str_replace(loan3$issue_d, "Nov", "11")
+```
+
+```{r}
+loan7$issue_d <- str_replace(loan7$issue_d, "Dec", "12")
+loan7$issue_d <- str_replace(loan7$issue_d, "Jan", "01")
+loan7$issue_d <- str_replace(loan7$issue_d, "Feb", "02")
+loan7$issue_d <- str_replace(loan7$issue_d, "Mar", "03")
+loan7$issue_d <- str_replace(loan7$issue_d, "Apr", "04")
+loan7$issue_d <- str_replace(loan7$issue_d, "May", "05")
+loan7$issue_d <- str_replace(loan7$issue_d, "Jun", "06")
+loan7$issue_d <- str_replace(loan7$issue_d, "Jul", "07")
+loan7$issue_d <- str_replace(loan7$issue_d, "Aug", "08")
+loan7$issue_d <- str_replace(loan7$issue_d, "Sep", "09")
+loan7$issue_d <- str_replace(loan7$issue_d, "Oct", "10")
+loan7$issue_d <- str_replace(loan7$issue_d, "Nov", "11")
+```
+
+
+
+```{r}
+loan3
+loan3$issue_d <- myd(loan3$issue_d)
+
+```
+```{r}
+
+loan7$issue_d <- myd(loan7$issue_d)
+```
+
+
+```{r}
+loan3
+```
+
+```{r}
+write.csv(loan7, "clean_loan2.csv")
+```
+
+
+
+
+```{r}
+ggplot(loan3) + 
+  geom_histogram(aes(x = issue_d , y = ..count.. , fill = factor(loan_outcome , c(1 , 0) , c('Default' , 'Fully Paid'))), bins = 30, position = "fill")
+```
+Default rate seems to get higher as the years progress
+```{r}
+cdplot(as.factor(loan_outcome) ~ issue_d, data=loan3, col=c("cornflowerblue", "orange"), main="Conditional density plot")
+```
+emp_length, loan_outcome, issue_d
+
+```{r}
+bond2 <- read_csv("2yrbond.csv")
+```
+
+```{r}
+bond2
+bond2$DATE <- mdy(bond2$DATE)
+bond2
+```
+
+
+
+
+
+```{r}
+bond2
+```
+
+
+```{r}
+ggplot(bond2)+
+  geom_line(aes(x = DATE, y = as.double(DGS2)))
+```
+```{r}
+
+```
+
+
+create a default rate variable for each money
+
+```{r}
+loan3
+loan3%>%
+  select(issue_dc, loan_outcome)%>%
+  dplyr::group_by(issue_dc, as.factor(loan_outcome))%>%
+  summarize(npl = n())
+  
+```
+
+```{r}
+#loan3
+
+merge1 <- aggregate(loan3$loan_outcome, by=list(Date=loan3$issue_d), FUN=length)
+merge2 <- aggregate(loan3$loan_outcome, by=list(Date=loan3$issue_d), FUN=sum)
+merge2
+```
+```{r}
+merge1
+merge2
+merge2 <- merge2%>%
+  mutate(y=x)%>%
+  select(Date, y)
+```
+```{r}
+merge1
+merge2
+```
+471 values, take value of previus day
+```{r}
+bond2
+#length(bond2$DGS2[bond2$DGS2=="."])
+bond2$DGS2 <- na_if(bond2$DGS2, ".")
+bond2
+```
+
+```{r}
+#library(zoo)
+bond2$DGS2 <- na.locf(bond2$DGS2, fromLast = TRUE)
+```
+
+```{r}
+complete_bond <- bond2
+```
+
+
+```{r}
+
+loan4 <- full_join(merge1, merge2,by = "Date" )
+
+loan4 <- loan4%>%
+  mutate(total = x, num_default = y)%>%
+  select(Date, total, num_default)
+```
+
+```{r}
+loan4
+#bond2%>%
+ # mutate(day = day(DATE))%>%
+  #filter(day==1)%>%
+  #select(DGS2, issue_d)
+bond2
+#does not include a lot of jan 1 bonds FYI
+bond2 <- bond2%>%
+  mutate(Date = DATE) #year = year(Date), day = day(Date))%>%
+  #select(Date, DGS2, year, day)%>%
+  f#ilter(year >= 2007 ,day == 1)
+
+```
+```{r}
+#bond2 <- bond2%>%
+  #select(Date, DGS2)
+bond2
+loan4
+```
+
+
+
+
+```{r}
+
+loan_bond <- full_join(loan4, bond2, by = "Date")
+loan_bond$DGS2 <- na.locf(loan_bond$DGS2, fromLast = TRUE)
+
+```
+```{r}
+loan_bond<- loan_bond%>%
+  filter(!is.na(total))%>%
+  select(Date, total, num_default, DGS2)
+```
+
+
+```{r}
+loan_bond <- loan_bond%>%
+  mutate(default_rate = num_default / total *100)
+
+```
+
+```{r}
+loan_bond$DGS2 <- as.double(loan_bond$DGS2)
+loan_bond
+```
+
+```{r}
+ggplot(loan_bond, aes(x=Date))+
+  geom_smooth(aes(y=default_rate), color = "blue")+
+  geom_smooth(aes(y=DGS2))
+```
+
+```{r}
+ggplot(loan_bond)+
+  geom_smooth(aes(x=DGS2, y=default_rate))+
+  geom_point(aes(x=DGS2, y=default_rate))
+```
+```{r}
+cor(loan_bond$default_rate, loan_bond$DGS2)
+```
+
+```{r}
+temp <- loan_bond%>%
+  filter(year(Date) <=2008)
+temp
+cor(temp$default_rate, temp$DGS2)
+ggplot(temp)+
+  geom_point(aes(x= DGS2, y = default_rate))
+```
+```{r}
+write.csv(loan_bond, "loan_bond.csv")
+```
+```{r}
+write.csv(complete_bond, "complete_bond.csv")
+```
+```{r}
+write.csv(loan3, "clean_loan.csv")
+
+```
+
+lets see how bond yield affects default based on income....
