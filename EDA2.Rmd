@@ -1,0 +1,57 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+```{r}
+library(tidyverse)
+library(dplyr)
+library(lubridate)
+library(zoo)
+```
+
+```{r}
+loan <- read_csv("clean_loan.csv")
+bond <- read_csv("complete_bond.csv")
+```
+
+
+Clean up 
+```{r}
+loan <- loan%>%
+  mutate(DATE = issue_d)
+bond <- bond%>%
+  filter(year(DATE) >=2007)
+loan_bond <- full_join(loan, bond, by= "DATE")
+loan_bond$DGS2 <- na.locf(loan_bond$DGS2, fromLast = TRUE)
+loan_bond <- loan_bond%>%
+  select(-c("X1.y"))
+```
+
+
+
+```{r}
+loan_bond$loan_out <- as.factor(loan_bond$loan_outcome) 
+loan_bond <- loan_bond%>%
+  transform(loan_outcome = as.factor(loan_outcome))
+```
+
+We want to see how income relates to bond yield, are the wealthy more resistant to an econmic decline?
+vars:
+-outcome
+-yield
+-emp_length
+
+
+yild and default
+```{r}
+lb <- loan_bond%>%
+  filter( DGS2 < 1)
+cdplot(as.factor(loan_outcome) ~ DATE, data=lb, col=c("cornflowerblue", "orange"), main="Conditional density plot")
+```
+cdplot(as.factor(loan_outcome) ~ issue_d, data=loan3, col=c("cornflowerblue", "orange"), main="Conditional density plot")
+
+```{r}
+loan_bond
+```
+
+okay...so no correlation between default rate and the bond yield on the day the loan was issued. What about the bond yield on the day the loan defaulted...or maybe the date of the last payment...
